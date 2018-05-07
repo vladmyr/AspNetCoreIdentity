@@ -6,6 +6,8 @@ namespace AspNetCoreIdentity.Models {
         public string NormalizeUserName { get; set; }
         public string PasswordHash { get; set; }
 
+        public AppUser() {}
+        
         public AppUser(
             string id, 
             string userName, 
