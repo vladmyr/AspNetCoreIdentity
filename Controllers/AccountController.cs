@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AspNetCoreIdentity.Models;
-using AspNetCoreIdentity.ViewModel;
+using AspNetCoreIdentity.ViewModels;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -62,6 +65,44 @@ namespace AspNetCoreIdentity.Controllers {
                 Status = Status.Success,
                 Message = "UserCreated",
                 Data = user
+            };
+        }
+
+        [HttpPost]
+        public async Task<ResultVM> Login([FromBody] LoginVM model) {
+            if (!ModelState.IsValid) {
+                var errors = ModelState.Keys.Select(e => "<li>" + e + "</li>");
+                return new ResultVM {
+                    Status = Status.Error,
+                    Message = "Invalid data",
+                    Data = string.Join("", errors)
+                };
+            }
+
+            var user = await _userManager.FindByNameAsync(model.UserName);
+            bool isPasswordValid = await _userManager.CheckPasswordAsync(user, model.Password);
+
+            if (user == null || !isPasswordValid) {
+                return new ResultVM {
+                    Status = Status.Error,
+                    Message = "Invalid data",
+                    Data = "<li>Invalid Username or Passowrd</li>"
+                };
+            }
+
+            var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
+            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
+            identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme, 
+                new ClaimsPrincipal(identity)
+            );
+
+            return new ResultVM {
+                Status = Status.Success,
+                Message = "Successfull login",
+                Data = model
             };
         }
     }

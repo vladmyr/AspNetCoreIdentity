@@ -1,4 +1,4 @@
-namespace AspNetCoreIdentity.ViewModel {
+namespace AspNetCoreIdentity.ViewModels {
     public class ResultVM {
         public Status Status { get; set; }
         public string Message { get; set; }

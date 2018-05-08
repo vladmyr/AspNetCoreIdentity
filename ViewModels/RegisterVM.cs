@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AspNetCoreIdentity.ViewModel {
+namespace AspNetCoreIdentity.ViewModels {
     public class RegisterVM {
         public string UserName { get; set; }
 

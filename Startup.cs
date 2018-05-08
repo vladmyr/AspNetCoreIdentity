@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using AspNetCoreIdentity.Infrastructure;
 using AspNetCoreIdentity.Models;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -29,6 +31,13 @@ namespace AspNetCoreIdentity
             services.AddIdentityCore<AppUser>(options => {});
             services.AddScoped<IUserStore<AppUser>, AppUserStore>();
 
+            services
+                .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => {
+                    options.Events.OnRedirectToAccessDenied = ReplaceRedirector(HttpStatusCode.Forbidden, options.Events.OnRedirectToAccessDenied);
+                    options.Events.OnRedirectToLogin = ReplaceRedirector(HttpStatusCode.Unauthorized, options.Events.OnRedirectToLogin);
+                });
+
             services.AddMvc();
         }
 
@@ -49,6 +58,7 @@ namespace AspNetCoreIdentity
             }
 
             app.UseStaticFiles();
+            app.UseAuthentication();
 
             app.UseMvc(routes =>
             {
@@ -61,5 +71,17 @@ namespace AspNetCoreIdentity
                     defaults: new { controller = "Home", action = "Index" });
             });
         }
+
+        static Func<RedirectContext<CookieAuthenticationOptions>, Task> ReplaceRedirector(
+            HttpStatusCode statusCode,
+            Func<RedirectContext<CookieAuthenticationOptions>, Task> existingRedirector
+        ) => context => {
+            if (!context.Request.Path.StartsWithSegments("/api")) {
+                return existingRedirector(context);
+            }
+
+            context.Response.StatusCode = (int) statusCode;
+            return Task.CompletedTask;
+        };
     }
 }
