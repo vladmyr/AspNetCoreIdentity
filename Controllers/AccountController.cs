@@ -8,6 +8,7 @@ using AspNetCoreIdentity.Models;
 using AspNetCoreIdentity.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -104,6 +105,35 @@ namespace AspNetCoreIdentity.Controllers {
                 Message = "Successfull login",
                 Data = model
             };
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<UserClaims> Claims() {
+            var claims = User.Claims.Select(c => new ClaimVM {
+                Type = c.Type,
+                Value = c.Value
+            });
+
+            return new UserClaims {
+                UserName = User.Identity.Name,
+                Claims = claims
+            };
+        }
+
+        [HttpGet]
+        public async Task<UserStateVM> Authenticated() {
+            return new UserStateVM {
+                IsAuthenticated = User.Identity.IsAuthenticated,
+                Username = User.Identity.IsAuthenticated
+                    ? User.Identity.Name
+                    : string.Empty
+            };
+        }
+
+        [HttpPost]
+        public async Task SignOut() {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
     }
 }
